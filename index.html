@@ -24,7 +24,7 @@
   header { padding-top: 28px; padding-bottom: 8px; }
   h1 { margin: 0 0 4px; font-size: 1.6rem; }
   header p { margin: 0; color: var(--muted); }
-  main { padding-top: 8px; padding-bottom: 48px; display: grid; gap: 14px; }
+  main { padding-top: 8px; padding-bottom: 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 
   .aviso { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px;
            padding: 10px 14px; font-size: .9rem; }
@@ -36,8 +36,14 @@
   .cuenta { font-size: .8rem; color: var(--muted); white-space: nowrap; }
   .cuenta.completo { color: var(--ok); font-weight: 600; }
 
-  .grupos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 560px) { .grupos { grid-template-columns: 1fr; } }
+  /* Próximo lunes resaltado */
+  .dia.proximo { border: 2px solid var(--a); box-shadow: 0 6px 20px rgba(47, 111, 219, .18); padding: 16px 18px; }
+  .dia.proximo h2 { font-size: 1.2rem; }
+  .etiqueta { display: inline-block; background: var(--a); color: #fff; font-size: .72rem; font-weight: 700;
+              letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-bottom: 6px; }
+
+  .grupos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  @media (max-width: 560px) { .grupos { grid-template-columns: minmax(0, 1fr); } }
   .grupo { border-radius: 10px; padding: 10px; background: var(--a-soft); --c: var(--a); }
   .grupo.b { background: var(--b-soft); --c: var(--b); }
   .grupo h3 { margin: 0 0 2px; font-size: .8rem; letter-spacing: .06em; color: var(--c); }
@@ -90,6 +96,7 @@ const clave = (f, g, p) => `${f}|${g}|${p}`;
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fmt = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
+// Lunes desde hoy (incluido si hoy es lunes) hasta FECHA_FIN. Los pasados no se muestran.
 function lunes() {
   const d = new Date(); d.setHours(0, 0, 0, 0);
   while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
@@ -190,12 +197,15 @@ function pintar() {
   const dias = lunes();
   if (!dias.length) { app.append(el('div', { class: 'cargando' }, 'No quedan lunes este año.')); return; }
 
-  for (const d of dias) {
+  dias.forEach((d, idx) => {
     const f = iso(d);
+    const proximo = idx === 0;
     const total = GRUPOS.length * PLAZAS.length;
     const llenas = GRUPOS.reduce((s, g) => s + PLAZAS.filter(p => datos.has(clave(f, g, p))).length, 0);
     const titulo = fmt.format(d);
-    app.append(el('section', { class: 'dia' },
+    const hoy = f === iso(new Date());
+    app.append(el('section', { class: 'dia' + (proximo ? ' proximo' : '') },
+      ...(proximo ? [el('span', { class: 'etiqueta' }, hoy ? 'Hoy' : 'Próximo lunes')] : []),
       el('div', { class: 'dia-cab' },
         el('h2', {}, titulo.charAt(0).toUpperCase() + titulo.slice(1)),
         el('span', { class: 'cuenta' + (llenas === total ? ' completo' : '') }, llenas === total ? 'Completo ✓' : `${llenas}/${total} plazas`)
@@ -205,7 +215,7 @@ function pintar() {
           el('h3', {}, g), ...PLAZAS.map(p => plaza(f, g, p))))
       )
     ));
-  }
+  });
 }
 
 async function refrescar() {
