@@ -157,8 +157,6 @@ function el(tag, attrs = {}, ...hijos) {
   return e;
 }
 
-function nombreRecordado() { try { return localStorage.getItem('mi-nombre') || ''; } catch { return ''; } }
-function recordarNombre(n) { try { localStorage.setItem('mi-nombre', n); } catch {} }
 
 function plaza(fecha, grupo, p) {
   const nombre = datos.get(clave(fecha, grupo, p));
@@ -171,13 +169,12 @@ function plaza(fecha, grupo, p) {
     }}, 'Quitar');
     return el('div', { class: 'plaza' }, el('span', { class: 'nombre', title: nombre }, nombre), btn);
   }
-  const input = el('input', { type: 'text', placeholder: 'Tu nombre', maxlength: '40', 'aria-label': `Nombre para ${grupo}, plaza ${p}` });
-  input.value = nombreRecordado();
+  const input = el('input', { type: 'text', placeholder: 'Tu nombre', maxlength: '40', autocomplete: 'off', name: `n-${fecha}-${grupo}-${p}`, 'aria-label': `Nombre para ${grupo}, plaza ${p}` });
   const apuntar = async () => {
     const n = input.value.trim();
     if (!n) { input.focus(); return; }
     btn.disabled = true; input.disabled = true;
-    try { setDatos(await enviar({ accion: 'apuntar', fecha, grupo, plaza: p, nombre: n })); recordarNombre(n); pintar(); toast('¡Apuntada! Gracias 💛'); }
+    try { setDatos(await enviar({ accion: 'apuntar', fecha, grupo, plaza: p, nombre: n })); pintar(); toast('¡Apuntada! Gracias 💛'); }
     catch (e) { toast(e.message || 'Error al guardar'); btn.disabled = false; input.disabled = false; }
   };
   input.addEventListener('keydown', e => { if (e.key === 'Enter') apuntar(); });
